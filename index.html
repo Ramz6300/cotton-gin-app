@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baumwoll-Gin Fabrik</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh}
+#app{max-width:960px;margin:0 auto;padding:0 16px}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea{font-family:inherit;font-size:14px;padding:10px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;width:100%}
+input:focus,select:focus{outline:none;border-color:#378ADD}
+.login-screen{text-align:center;padding:80px 16px}
+.login-title{font-size:28px;font-weight:700;margin-bottom:4px}
+.login-sub{font-size:14px;color:#666;margin-bottom:32px}
+.login-form{max-width:340px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.login-btn{padding:14px;border-radius:12px;border:none;font-size:15px;font-weight:600;color:#fff}
+.login-btn.admin{background:#1D9E75}.login-btn.waage{background:#378ADD}.login-btn.buch{background:#D85A30}
+.header{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid #e0e0e0;margin-bottom:20px}
+.header-title{font-size:18px;font-weight:600}
+.header-role{font-size:13px;color:#666;margin-left:8px}
+.logout-btn{font-size:13px;color:#666;background:none;border:1px solid #ddd;padding:6px 14px;border-radius:8px}
+.tabs{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap}
+.tab-btn{padding:7px 14px;border-radius:8px;font-size:13px;border:none;font-weight:400;background:transparent;color:#666}
+.tab-btn.active{font-weight:600;color:#fff}
+.metric{background:#eee;padding:16px;border-radius:8px}
+.metric-label{font-size:13px;color:#666}.metric-value{font-size:22px;font-weight:600}
+.card{background:#fff;border:1px solid #e0e0e0;padding:16px 20px;border-radius:12px;margin-bottom:12px}
+.card-title{font-size:15px;font-weight:600;margin-bottom:12px}
+.grid{display:grid;gap:12px}.grid-2{grid-template-columns:1fr 1fr}.grid-3{grid-template-columns:1fr 1fr 1fr}
+.grid-5{grid-template-columns:repeat(5,1fr)}.grid-auto{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #f0f0f0;align-items:center}
+.badge{font-size:11px;padding:2px 8px;border-radius:8px;display:inline-block}
+.badge-green{background:#e8f5e9;color:#1D9E75}.badge-orange{background:#fff3e0;color:#D85A30}
+.badge-blue{background:#e3f2fd;color:#378ADD}
+.btn{padding:12px 24px;border-radius:8px;border:none;font-weight:600;font-size:14px;color:#fff}
+.btn-green{background:#1D9E75}.btn-blue{background:#378ADD}.btn-orange{background:#D85A30}
+.btn-sm{padding:6px 16px;font-size:13px}
+.btn-outline{background:transparent;border:1px solid #ddd;color:#666}
+.preview-box{padding:16px;background:#f5f5f0;border-radius:8px;margin:12px 0}
+.info-box{padding:12px;background:#e3f2fd;border-radius:8px;margin-bottom:16px;font-size:13px;color:#1565c0}
+.warn-box{padding:8px 12px;background:#fce4ec;border-radius:8px;font-size:13px;color:#c62828;display:none;margin-top:8px}
+.success-box{padding:8px 12px;background:#e8f5e9;border-radius:8px;font-size:13px;color:#1D9E75;margin-top:8px}
+.link{font-size:12px;color:#378ADD;cursor:pointer;margin-top:6px}
+.avatar{width:40px;height:40px;border-radius:50%;background:#e3f2fd;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;color:#1565c0}
+.prod-cell{background:#f5f5f0;padding:8px;border-radius:8px;text-align:center}
+.prod-cell-label{font-size:11px;color:#666}.prod-cell-val{font-size:14px;font-weight:600}
+.prod-cell-tag{font-size:11px}
+.bar-outer{height:8px;background:#eee;border-radius:4px;overflow:hidden;margin-top:8px}
+.bar-inner{height:100%;border-radius:4px}
+table{width:100%;font-size:13px;border-collapse:collapse}
+th{text-align:left;padding:8px 6px;color:#666;font-weight:500;border-bottom:1px solid #ccc}
+td{padding:8px 6px;border-bottom:1px solid #f0f0f0}
+.r{text-align:right}.b{font-weight:600}
+.loading{text-align:center;padding:40px;color:#666}
+label{font-size:12px;color:#666;display:block;margin-bottom:4px}
+@media(max-width:640px){.grid-2,.grid-3,.grid-5{grid-template-columns:1fr}.grid-auto{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="login-screen" class="login-screen">
+    <div class="login-title">Baumwoll-Gin Fabrik</div>
+    <div class="login-sub">Verwaltungssystem</div>
+    <div class="login-form">
+      <input type="text" id="login-user" placeholder="Benutzername" />
+      <input type="password" id="login-pass" placeholder="Passwort" />
+      <button class="login-btn admin" onclick="doLogin()">Anmelden</button>
+      <div id="login-error" style="color:#c62828;font-size:13px;display:none"></div>
+    </div>
+  </div>
+  <div id="main-app" style="display:none">
+    <div class="header">
+      <div><span class="header-title" id="app-title"></span><span class="header-role" id="role-label"></span></div>
+      <button class="logout-btn" onclick="doLogout()">Abmelden</button>
+    </div>
+    <div class="tabs" id="nav-tabs"></div>
+    <div id="content"></div>
+  </div>
+</div>
+
+<script>
+const SUPA_URL = 'https://uydvqfwpusejmegxukys.supabase.co';
+const SUPA_KEY = 'sb_publishable_ydjahlS7HffCvBzAWiVpfQ_6soQ0_hT';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+let S = { role:null, tab:'dashboard', user:null };
+let D = { einstellungen:null, bauern:[], wiegungen:[], produktion:[], lager:null, verkaeufe:[], mitarbeiter:[], ausgaben:[], lagerKorrekturen:[] };
+
+const fmt = n => Math.round(n).toLocaleString('de-DE');
+const fG = n => fmt(n) + ' ' + (D.einstellungen?.waehrung || 'TJS');
+const fU = n => '$' + fmt(n);
+const today = () => new Date().toISOString().split('T')[0];
+const nowTime = () => { const d=new Date(); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); };
+
+const TABS = {
+  admin:['dashboard','tagespreis','wiegungen','produktion','lager','verkauf','bauern','mitarbeiter','ausgaben','buchungen'],
+  waage:['wiegung_neu','bauern','wiegungen'],
+  buchhalter:['buchungen','wiegungen','produktion','lager','verkauf','ausgaben']
+};
+const LBL = {dashboard:'Dashboard',tagespreis:'Tagespreis',wiegungen:'Wiegungen',wiegung_neu:'Neue Wiegung',produktion:'Produktion',lager:'Lager',verkauf:'Verkauf',bauern:'Bauern',mitarbeiter:'Mitarbeiter',ausgaben:'Ausgaben',buchungen:'Buchungen'};
+const RC = {admin:'#1D9E75',waage:'#378ADD',buchhalter:'#D85A30'};
+const PN = {rohbaumwolle:'Rohbaumwolle',fasern:'Fasern (Ballen)',samen:'Samen',lint:'Lint',abfall:'Abfall',rest:'Restbestände'};
+const PCO = {rohbaumwolle:'#D85A30',fasern:'#1D9E75',samen:'#378ADD',lint:'#D4537E',abfall:'#888',rest:'#BA7517'};
+
+// ========== DATABASE ==========
+async function loadAll() {
+  const [e,b,w,p,l,v,m,a,k] = await Promise.all([
+    sb.from('einstellungen').select('*').eq('id',1).single(),
+    sb.from('bauern').select('*').order('name'),
+    sb.from('wiegungen').select('*').order('created_at',{ascending:false}),
+    sb.from('produktion').select('*').order('created_at',{ascending:false}),
+    sb.from('lager').select('*').eq('id',1).single(),
+    sb.from('verkaeufe').select('*').order('created_at',{ascending:false}),
+    sb.from('mitarbeiter').select('*').order('name'),
+    sb.from('ausgaben').select('*').order('created_at',{ascending:false}),
+    sb.from('lager_korrekturen').select('*').order('created_at',{ascending:false})
+  ]);
+  D.einstellungen = e.data || {tagespreis:4500,waehrung:'TJS',anteil_fasern:35,anteil_samen:50,anteil_lint:7,anteil_abfall:5,anteil_rest:3,vp_fasern:12,vp_samen:3,vp_lint:5,vp_rest:1};
+  D.bauern = b.data || [];
+  D.wiegungen = w.data || [];
+  D.produktion = p.data || [];
+  D.lager = l.data || {rohbaumwolle:0,fasern:0,samen:0,lint:0,abfall:0,rest:0};
+  D.verkaeufe = v.data || [];
+  D.mitarbeiter = m.data || [];
+  D.ausgaben = a.data || [];
+  D.lagerKorrekturen = k.data || [];
+}
+
+// ========== AUTH ==========
+async function doLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-error');
+  if (!u||!p) { err.textContent='Bitte ausfüllen'; err.style.display='block'; return; }
+  const {data} = await sb.from('benutzer').select('*').eq('username',u).eq('passwort',p).single();
+  if (!data) { err.textContent='Falscher Benutzername oder Passwort'; err.style.display='block'; return; }
+  S.role = data.rolle; S.user = data; S.tab = TABS[data.rolle][0];
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('main-app').style.display='block';
+  document.getElementById('role-label').textContent = data.name + ' (' + {admin:'Geschäftsführer',waage:'Waage',buchhalter:'Buchhalter'}[data.rolle] + ')';
+  await loadAll(); render();
+}
+function doLogout() { S.role=null;S.user=null; document.getElementById('login-screen').style.display='block'; document.getElementById('main-app').style.display='none'; document.getElementById('login-user').value=''; document.getElementById('login-pass').value=''; document.getElementById('login-error').style.display='none'; }
+function switchTab(t) { S.tab=t; render(); }
+
+function render() {
+  const c = RC[S.role];
+  document.getElementById('nav-tabs').innerHTML = TABS[S.role].map(t =>
+    `<button class="tab-btn ${S.tab===t?'active':''}" onclick="switchTab('${t}')" style="${S.tab===t?'background:'+c:''}">${LBL[t]}</button>`
+  ).join('');
+  document.getElementById('app-title').textContent = LBL[S.tab];
+  const R = {dashboard:rDash,tagespreis:rPreis,wiegungen:rWieg,wiegung_neu:rNeueW,produktion:rProd,lager:rLager,verkauf:rVerkauf,bauern:rBauern,mitarbeiter:rMit,ausgaben:rAusg,buchungen:rBuch};
+  document.getElementById('content').innerHTML = R[S.tab]();
+}
+
+function mc(l,v,w){return `<div class="metric"><div class="metric-label" ${w?'style="color:'+w+'"':''}>${l}</div><div class="metric-value">${v}</div></div>`;}
+function cd(t,c){return `<div class="card"><div class="card-title">${t}</div>${c}</div>`;}
+
+// ========== DASHBOARD ==========
+function rDash(){
+  const e=D.einstellungen, hW=D.wiegungen.filter(w=>w.datum===today()), hKg=hW.reduce((s,w)=>s+Number(w.netto),0), hA=hW.reduce((s,w)=>s+Number(w.betrag),0), offen=hW.filter(w=>!w.ausgezahlt).length;
+  const gU=D.verkaeufe.reduce((s,v)=>s+Number(v.umsatz),0), l=D.lager, lP=D.produktion[0];
+  return `
+    <div class="grid grid-auto" style="margin-bottom:20px">${mc('Tagespreis',fG(e.tagespreis)+'/t')}${mc('Einkauf heute',fmt(hKg)+' kg')}${mc('Ausgaben heute',fG(hA))}${mc('Offene Auszahlungen',offen,offen>0?'#D85A30':'')}${mc('Gesamtumsatz',fU(gU))}</div>
+    <div class="grid grid-2" style="margin-bottom:20px">
+      ${cd('Lagerbestand',['rohbaumwolle','fasern','samen','lint','rest'].map(k=>`<div class="row"><span style="color:#666">${PN[k]}</span><span class="b">${fmt(l[k]||0)} kg</span></div>`).join(''))}
+      ${cd('Letzte Produktion',lP?`<div style="font-size:13px;color:#666;margin-bottom:8px">${lP.datum} — Fasern gewogen: ${fmt(lP.fasern_gewogen)} kg</div>${['rohbaumwolle','fasern','samen','lint','abfall','rest'].map(k=>`<div class="row"><span>${PN[k]} ${k==='fasern'?'<span class="badge badge-green">gewogen</span>':'<span class="badge badge-orange">berechnet</span>'}</span><span class="b">${fmt(lP[k])} kg</span></div>`).join('')}`:'<div style="color:#666;font-size:13px">Keine Daten</div>')}
+    </div>
+    ${cd('Heutige Wiegungen',hW.length===0?'<div style="color:#666;font-size:13px">Noch keine Wiegungen</div>':hW.map(w=>{const b=D.bauern.find(b=>b.id===w.bauer_id);return `<div class="row"><div><span class="b">${b?b.name:'?'}</span> <span style="color:#666">${w.zeitpunkt}</span></div><div style="display:flex;gap:16px;align-items:center"><span>${fmt(w.netto)} kg</span><span class="b">${fG(w.betrag)}</span><span class="badge ${w.ausgezahlt?'badge-green':'badge-orange'}">${w.ausgezahlt?'Bezahlt':'Offen'}</span></div></div>`;}).join(''))}`;
+}
+
+// ========== TAGESPREIS ==========
+function rPreis(){
+  const e=D.einstellungen;
+  return `<div style="max-width:420px">${cd('Tagespreis pro Tonne',`
+    <div style="font-size:32px;font-weight:600;margin-bottom:24px">${fG(e.tagespreis)}</div>
+    <label>Neuen Preis festlegen (${e.waehrung}/Tonne)</label>
+    <div style="display:flex;gap:8px;margin-bottom:24px"><input type="number" id="np" value="${e.tagespreis}" /><button class="btn btn-green" onclick="savePreis()">Speichern</button></div>
+    <div style="border-top:1px solid #eee;padding-top:16px"><div class="b" style="margin-bottom:8px">Verkaufspreise ($/kg)</div>
+    ${['fasern','samen','lint','rest'].map(k=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px"><span>${PN[k]}</span><div style="display:flex;align-items:center;gap:6px"><span>$</span><input type="number" id="vp-${k}" value="${e['vp_'+k]}" style="width:80px" step="0.1" /><span>/kg</span></div></div>`).join('')}
+    <button class="btn btn-green btn-sm" style="margin-top:8px" onclick="saveVP()">Preise speichern</button>
+    </div>
+  `)}</div>`;
+}
+async function savePreis(){
+  const v=parseInt(document.getElementById('np').value);
+  if(v>0){await sb.from('einstellungen').update({tagespreis:v,updated_at:new Date().toISOString()}).eq('id',1);await loadAll();render();}
+}
+async function saveVP(){
+  const u={};['fasern','samen','lint','rest'].forEach(k=>{u['vp_'+k]=parseFloat(document.getElementById('vp-'+k).value)||0;});
+  await sb.from('einstellungen').update({...u,updated_at:new Date().toISOString()}).eq('id',1);await loadAll();render();
+}
+
+// ========== NEUE WIEGUNG ==========
+function rNeueW(){
+  const e=D.einstellungen;
+  return `<div style="max-width:480px">${cd('Neue Wiegung erfassen',`
+    <div style="font-size:14px;color:#666;margin-bottom:4px">Tagespreis: <span class="b" style="color:#1a1a1a">${fG(e.tagespreis)}/t</span></div>
+    <div style="margin-top:16px"><label>Bauer</label>
+      <select id="w-bauer">${D.bauern.map(b=>`<option value="${b.id}">${b.name}</option>`).join('')}</select>
+      <div class="link" onclick="switchTab('bauern')">Bauer nicht in der Liste? → Neuen Bauer anlegen</div></div>
+    <div class="grid grid-2" style="margin-top:16px">
+      <div><label>Gewicht voll (kg)</label><input type="number" id="w-voll" oninput="calcW()" /></div>
+      <div><label>Gewicht leer (kg)</label><input type="number" id="w-leer" oninput="calcW()" /></div>
+    </div>
+    <div class="preview-box" style="margin-top:16px">
+      <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px"><span style="color:#666">Netto-Gewicht</span><span class="b" id="w-netto">— kg</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:14px"><span style="color:#666">Auszahlungsbetrag</span><span class="b" style="font-size:18px" id="w-betrag">—</span></div>
+    </div>
+    <button class="btn btn-blue" style="width:100%;margin-top:16px" onclick="saveW()">Wiegung speichern</button>
+  `)}</div>`;
+}
+function calcW(){const e=D.einstellungen,v=parseInt(document.getElementById('w-voll').value)||0,l=parseInt(document.getElementById('w-leer').value)||0,n=Math.max(0,v-l);document.getElementById('w-netto').textContent=fmt(n)+' kg';document.getElementById('w-betrag').textContent=n>0?fG(n*e.tagespreis/1000):'—';}
+async function saveW(){
+  const e=D.einstellungen,bid=parseInt(document.getElementById('w-bauer').value),v=parseInt(document.getElementById('w-voll').value)||0,l=parseInt(document.getElementById('w-leer').value)||0;
+  if(v<=l||v===0)return;const n=v-l,betrag=n*e.tagespreis/1000;
+  await sb.from('wiegungen').insert({bauer_id:bid,datum:today(),zeitpunkt:nowTime(),gewicht_voll:v,gewicht_leer:l,netto:n,preis:e.tagespreis,betrag,ausgezahlt:false});
+  await sb.from('bauern').update({lieferungen:((D.bauern.find(b=>b.id===bid)||{}).lieferungen||0)+1,gesamt_kg:((D.bauern.find(b=>b.id===bid)||{}).gesamt_kg||0)+n}).eq('id',bid);
+  await sb.from('lager').update({rohbaumwolle:(D.lager.rohbaumwolle||0)+n,updated_at:new Date().toISOString()}).eq('id',1);
+  await loadAll();render();
+}
+
+// ========== WIEGUNGEN ==========
+function rWieg(){
+  return `<div style="overflow-x:auto"><table>
+    <thead><tr>${['Nr.','Zeit','Bauer','Voll','Leer','Netto','Betrag','Status'].map(h=>`<th class="${['Voll','Leer','Netto','Betrag'].includes(h)?'r':''}">${h}</th>`).join('')}</tr></thead>
+    <tbody>${D.wiegungen.map(w=>{const b=D.bauern.find(b=>b.id===w.bauer_id);return `<tr><td>#${w.id}</td><td>${w.zeitpunkt}</td><td class="b">${b?b.name:'?'}</td><td class="r">${fmt(w.gewicht_voll)}</td><td class="r">${fmt(w.gewicht_leer)}</td><td class="r b">${fmt(w.netto)} kg</td><td class="r b">${fG(w.betrag)}</td><td style="text-align:center"><span class="badge ${w.ausgezahlt?'badge-green':'badge-orange'}">${w.ausgezahlt?'Bezahlt':'Offen'}</span></td></tr>`;}).join('')}</tbody></table></div>`;
+}
+
+// ========== PRODUKTION ==========
+function rProd(){
+  const e=D.einstellungen;
+  return `
+    ${cd('Produktionsanteile',`
+      <div style="font-size:13px;color:#666;margin-bottom:10px">Du gibst nur das Fasern-Gewicht ein. Alle anderen Werte werden berechnet.</div>
+      <div class="grid grid-5">${['fasern','samen','lint','abfall','rest'].map(k=>`<div style="text-align:center"><label>${PN[k]||k}</label><div style="display:flex;align-items:center;justify-content:center;gap:2px"><input type="number" id="ew-${k}" value="${e['anteil_'+k]}" style="width:50px;text-align:center" /><span style="font-size:12px">%</span></div></div>`).join('')}</div>
+      <button class="btn-outline btn-sm" style="margin-top:10px;padding:6px 16px;border-radius:8px;border:1px solid #ddd;background:transparent;color:#666" onclick="saveAnteile()">Anteile aktualisieren</button>
+    `)}
+    ${cd('Tagesproduktion erfassen',`
+      <div class="info-box"><b>So funktioniert es:</b> Fasern gewogen eingeben → Rohbaumwolle = Fasern / ${e.anteil_fasern}% × 100 → Rest wird proportional berechnet.</div>
+      <div style="max-width:300px;margin-bottom:16px"><label style="font-size:14px">Fasern gewogen (kg)</label><input type="number" id="p-fasern" oninput="calcProd()" placeholder="z.B. 1050" style="font-size:20px;padding:12px" /></div>
+      <div id="p-preview" style="display:none">
+        <div class="preview-box">
+          <div class="b" style="margin-bottom:12px">Berechnete Produktmengen</div>
+          <div class="grid grid-3" style="margin-bottom:8px">
+            <div class="prod-cell"><div class="prod-cell-label">Rohbaumwolle</div><div class="prod-cell-val" id="p-roh-v">—</div></div>
+            <div class="prod-cell" style="background:#e8f5e9"><div class="prod-cell-label" style="color:#1D9E75">Fasern (gewogen)</div><div class="prod-cell-val" style="color:#1D9E75" id="p-fas-v">—</div></div>
+            <div class="prod-cell"><div class="prod-cell-label">Samen</div><div class="prod-cell-val" id="p-sam-v">—</div></div>
+          </div>
+          <div class="grid grid-3">
+            <div class="prod-cell"><div class="prod-cell-label">Lint</div><div class="prod-cell-val" id="p-lin-v">—</div></div>
+            <div class="prod-cell"><div class="prod-cell-label">Abfall</div><div class="prod-cell-val" id="p-abf-v">—</div></div>
+            <div class="prod-cell"><div class="prod-cell-label">Rest</div><div class="prod-cell-val" id="p-res-v">—</div></div>
+          </div>
+          <div id="p-check" style="margin-top:12px;padding:8px 12px;border-radius:8px;font-size:13px;background:#fff;border:1px solid #eee"></div>
+        </div>
+        <button class="btn btn-green" style="width:100%" onclick="saveProd()">Produktion speichern</button>
+      </div>
+    `)}
+    <div class="b" style="margin:20px 0 12px">Produktionsverlauf</div>
+    ${D.produktion.map(p=>cd(p.datum+' — Fasern gewogen: '+fmt(p.fasern_gewogen)+' kg',`
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px">
+        ${['rohbaumwolle','fasern','samen','lint','abfall','rest'].map(k=>`<div class="prod-cell"><div class="prod-cell-label">${PN[k]}</div><div class="prod-cell-val">${fmt(p[k])} kg</div><div class="prod-cell-tag" style="color:${k==='fasern'?'#1D9E75':'#D85A30'}">${k==='fasern'?'gewogen':'berechnet'}</div></div>`).join('')}
+      </div>`)).join('')}`;
+}
+
+let calcedP = null;
+function calcProd(){
+  const e=D.einstellungen,f=parseInt(document.getElementById('p-fasern').value)||0,prev=document.getElementById('p-preview');
+  if(f<=0||e.anteil_fasern<=0){prev.style.display='none';calcedP=null;return;}
+  const roh=Math.round(f/e.anteil_fasern*100),sam=Math.round(roh*e.anteil_samen/100),lin=Math.round(roh*e.anteil_lint/100),abf=Math.round(roh*e.anteil_abfall/100),rest=roh-f-sam-lin-abf;
+  calcedP={rohbaumwolle:roh,fasern:f,samen:sam,lint:lin,abfall:abf,rest};
+  document.getElementById('p-roh-v').textContent=fmt(roh)+' kg';
+  document.getElementById('p-fas-v').textContent=fmt(f)+' kg';
+  document.getElementById('p-sam-v').textContent=fmt(sam)+' kg';
+  document.getElementById('p-lin-v').textContent=fmt(lin)+' kg';
+  document.getElementById('p-abf-v').textContent=fmt(abf)+' kg';
+  document.getElementById('p-res-v').textContent=fmt(rest)+' kg';
+  const ck=document.getElementById('p-check'),lR=D.lager.rohbaumwolle||0;
+  ck.innerHTML=roh>lR?`<span style="color:#D85A30">Hinweis: Berechnete Rohbaumwolle (${fmt(roh)} kg) > Lagerbestand (${fmt(lR)} kg)</span>`:`<span style="color:#1D9E75">Plausibel: ${fmt(roh)} kg von ${fmt(lR)} kg verarbeitet.</span>`;
+  prev.style.display='block';
+}
+async function saveProd(){
+  if(!calcedP)return;const p=calcedP;
+  await sb.from('produktion').insert({datum:today(),fasern_gewogen:p.fasern,rohbaumwolle:p.rohbaumwolle,fasern:p.fasern,samen:p.samen,lint:p.lint,abfall:p.abfall,rest:p.rest});
+  const l=D.lager;
+  await sb.from('lager').update({rohbaumwolle:Math.max(0,(l.rohbaumwolle||0)-p.rohbaumwolle),fasern:(l.fasern||0)+p.fasern,samen:(l.samen||0)+p.samen,lint:(l.lint||0)+p.lint,rest:(l.rest||0)+p.rest,updated_at:new Date().toISOString()}).eq('id',1);
+  calcedP=null;await loadAll();render();
+}
+async function saveAnteile(){
+  const u={};['fasern','samen','lint','abfall','rest'].forEach(k=>{u['anteil_'+k]=parseFloat(document.getElementById('ew-'+k).value)||0;});
+  await sb.from('einstellungen').update({...u,updated_at:new Date().toISOString()}).eq('id',1);await loadAll();render();
+}
+
+// ========== LAGER ==========
+function rLager(){
+  const items=['rohbaumwolle','fasern','samen','lint','rest'],l=D.lager,mx=Math.max(...items.map(k=>l[k]||0),1);
+  return `<div class="grid" style="margin-bottom:20px">
+    ${items.map(k=>`<div class="card" style="margin-bottom:0"><div style="display:flex;justify-content:space-between;align-items:center"><span class="b">${PN[k]}</span><span class="b" style="font-size:16px">${fmt(l[k]||0)} kg</span></div><div class="bar-outer"><div class="bar-inner" style="width:${Math.round((l[k]||0)/mx*100)}%;background:${PCO[k]}"></div></div></div>`).join('')}
+  </div>
+  ${cd('Bestand manuell korrigieren',`
+    <div style="font-size:13px;color:#666;margin-bottom:12px">Nutze dies nach einer Inventur oder tatsächlichen Wiegung.</div>
+    <div class="grid grid-3"><div><label>Produkt</label><select id="lk-prod">${items.map(k=>`<option value="${k}">${PN[k]}</option>`).join('')}</select></div><div><label>Tatsächlicher Bestand (kg)</label><input type="number" id="lk-wert" /></div><div><label>Notiz</label><input type="text" id="lk-notiz" placeholder="z.B. Inventur" /></div></div>
+    <button class="btn btn-orange btn-sm" style="margin-top:12px" onclick="korrLager()">Bestand korrigieren</button>
+  `)}
+  ${D.lagerKorrekturen.length>0?cd('Korrektur-Verlauf',D.lagerKorrekturen.map(k=>`<div class="row"><div><span class="b">${PN[k.produkt]}</span> <span style="color:#666">— ${k.datum}</span></div><div><span style="color:#666">${fmt(k.alt_wert)} →</span> <span class="b">${fmt(k.neu_wert)} kg</span> <span style="color:#666;font-size:11px">${k.notiz}</span></div></div>`).join('')):''}`;
+}
+async function korrLager(){
+  const prod=document.getElementById('lk-prod').value,wert=parseInt(document.getElementById('lk-wert').value),notiz=document.getElementById('lk-notiz').value.trim()||'Korrektur',l=D.lager;
+  if(isNaN(wert)||wert<0)return;
+  await sb.from('lager_korrekturen').insert({datum:today(),produkt:prod,alt_wert:l[prod]||0,neu_wert:wert,notiz});
+  const upd={};upd[prod]=wert;upd.updated_at=new Date().toISOString();
+  await sb.from('lager').update(upd).eq('id',1);await loadAll();render();
+}
+
+// ========== VERKAUF ==========
+function rVerkauf(){
+  const g=D.verkaeufe.reduce((s,v)=>s+Number(v.umsatz),0),e=D.einstellungen,l=D.lager;
+  return `<div class="grid grid-auto" style="margin-bottom:20px">${mc('Gesamtumsatz',fU(g))}${mc('Verkäufe',D.verkaeufe.length)}${mc('Ø pro Verkauf',fU(D.verkaeufe.length>0?Math.round(g/D.verkaeufe.length):0))}</div>
+  ${cd('Neuen Verkauf erfassen',`
+    <div class="grid grid-2"><div><label>Produkt</label><select id="v-prod" onchange="updVP()">${['fasern','samen','lint','rest'].map(k=>`<option value="${k}">${PN[k]} (${fmt(l[k]||0)} kg)</option>`).join('')}</select></div><div><label>Käufer</label><input type="text" id="v-kaeufer" /></div><div><label>Menge gewogen (kg)</label><input type="number" id="v-menge" oninput="calcV()" /></div><div><label>Preis pro kg ($)</label><input type="number" id="v-preis" value="${e.vp_fasern}" step="0.1" oninput="calcV()" /></div></div>
+    <div class="preview-box" style="display:flex;justify-content:space-between;font-size:15px"><span style="color:#666">Umsatz</span><span class="b" style="font-size:20px" id="v-umsatz">—</span></div>
+    <div class="warn-box" id="v-warn"></div>
+    <button class="btn btn-green" style="width:100%;margin-top:12px" onclick="saveV()">Verkauf speichern</button>
+  `)}
+  ${cd('Verkaufshistorie',D.verkaeufe.map(v=>`<div class="row"><div><span class="b">${v.kaeufer}</span> <span style="color:#666">— ${PN[v.produkt]} — ${v.datum}</span></div><div style="display:flex;gap:16px"><span>${fmt(v.menge)} kg</span><span class="b">${fU(v.umsatz)}</span></div></div>`).join(''))}`;
+}
+function updVP(){const e=D.einstellungen;document.getElementById('v-preis').value=e['vp_'+document.getElementById('v-prod').value]||0;calcV();}
+function calcV(){const m=parseFloat(document.getElementById('v-menge').value)||0,p=parseFloat(document.getElementById('v-preis').value)||0;document.getElementById('v-umsatz').textContent=m>0&&p>0?fU(Math.round(m*p)):'—';const prod=document.getElementById('v-prod').value,warn=document.getElementById('v-warn'),l=D.lager;if(m>(l[prod]||0)){warn.style.display='block';warn.textContent=`Nur ${fmt(l[prod]||0)} kg ${PN[prod]} im Lager!`;}else{warn.style.display='none';}}
+async function saveV(){
+  const prod=document.getElementById('v-prod').value,kaeufer=document.getElementById('v-kaeufer').value.trim(),menge=parseFloat(document.getElementById('v-menge').value)||0,preis=parseFloat(document.getElementById('v-preis').value)||0,l=D.lager;
+  if(!kaeufer||menge<=0||preis<=0||menge>(l[prod]||0))return;
+  await sb.from('verkaeufe').insert({datum:today(),produkt:prod,kaeufer,menge,preis_pro_kg:preis,umsatz:Math.round(menge*preis)});
+  const upd={};upd[prod]=(l[prod]||0)-menge;upd.updated_at=new Date().toISOString();
+  await sb.from('lager').update(upd).eq('id',1);await loadAll();render();
+}
+
+// ========== BUCHUNGEN ==========
+function rBuch(){
+  const offene=D.wiegungen.filter(w=>!w.ausgezahlt),bezahlte=D.wiegungen.filter(w=>w.ausgezahlt);
+  return `<div style="margin-bottom:20px"><div class="b" style="margin-bottom:12px">Offene Auszahlungen (${offene.length})</div>
+    ${offene.length===0?'<div class="preview-box" style="font-size:13px;color:#666">Keine offenen Auszahlungen</div>':offene.map(w=>{const b=D.bauern.find(b=>b.id===w.bauer_id);return `<div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><div class="b">${b?b.name:'?'} — #${w.id}</div><div style="font-size:12px;color:#666">${w.datum} ${w.zeitpunkt} — ${fmt(w.netto)} kg</div></div><div style="display:flex;align-items:center;gap:12px"><span class="b" style="font-size:15px">${fG(w.betrag)}</span><button class="btn btn-green btn-sm" onclick="auszahlen(${w.id})">Auszahlen</button></div></div>`;}).join('')}
+  </div><div><div class="b" style="margin-bottom:12px">Abgeschlossen (${bezahlte.length})</div>
+    ${bezahlte.map(w=>{const b=D.bauern.find(b=>b.id===w.bauer_id);return `<div class="row"><span>${b?b.name:'?'} — #${w.id} — ${w.datum}</span><span class="b">${fG(w.betrag)}</span></div>`;}).join('')}
+  </div>`;
+}
+async function auszahlen(id){await sb.from('wiegungen').update({ausgezahlt:true}).eq('id',id);await loadAll();render();}
+
+// ========== BAUERN ==========
+function rBauern(){
+  const isW=S.role==='waage';
+  return `
+    ${cd(isW?'Neuen Bauer anlegen':'Neuen Bauer hinzufügen',`
+      ${isW?'<div style="font-size:13px;color:#666;margin-bottom:12px">Wenn ein neuer Bauer kommt, der noch nicht im System ist.</div>':''}
+      <div class="grid grid-3"><div><label>Name</label><input type="text" id="b-name" placeholder="Vor- und Nachname" /></div><div><label>Telefon</label><input type="text" id="b-tel" placeholder="+992 ..." /></div><div><label>Adresse / Dorf</label><input type="text" id="b-adr" placeholder="z.B. Dorf Guliston" /></div></div>
+      <button class="btn ${isW?'btn-blue':'btn-green'} btn-sm" style="margin-top:12px" onclick="addBauer()">Bauer anlegen</button>
+    `)}
+    <div class="grid" style="margin-top:12px">${D.bauern.map(b=>`<div class="card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0"><div style="display:flex;align-items:center;gap:12px"><div class="avatar">${b.name.split(' ').map(n=>n[0]).join('')}</div><div><div class="b">${b.name}</div><div style="font-size:12px;color:#666">${b.tel} — ${b.adresse}</div></div></div><div style="text-align:right"><div class="b">${b.lieferungen} Lieferungen</div><div style="font-size:12px;color:#666">${fmt(b.gesamt_kg)} kg gesamt</div></div></div>`).join('')}</div>`;
+}
+async function addBauer(){
+  const n=document.getElementById('b-name').value.trim(),t=document.getElementById('b-tel').value.trim(),a=document.getElementById('b-adr').value.trim();
+  if(!n)return;
+  await sb.from('bauern').insert({name:n,tel:t||'-',adresse:a||'-',lieferungen:0,gesamt_kg:0});
+  await loadAll();render();
+}
+
+// ========== MITARBEITER ==========
+function rMit(){return `<div class="grid">${D.mitarbeiter.map(m=>`<div class="card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0"><div><div class="b">${m.name}</div><div style="font-size:12px;color:#666">${m.rolle} — ${m.tel}</div></div>${m.gehalt>0?`<div class="b">${fG(m.gehalt)}/Monat</div>`:''}</div>`).join('')}</div>`;}
+
+// ========== AUSGABEN ==========
+function rAusg(){
+  const g=D.ausgaben.reduce((s,a)=>s+Number(a.betrag),0);
+  return `<div class="grid grid-2" style="margin-bottom:20px">${mc('Gesamtausgaben',fG(g))}${mc('Einträge',D.ausgaben.length)}</div>
+  <div style="margin-bottom:20px">${D.ausgaben.map(a=>`<div class="row"><div><span class="b">${a.kategorie}</span> <span style="color:#666">— ${a.beschreibung}</span></div><div style="display:flex;gap:16px"><span style="color:#666">${a.datum}</span><span class="b">${fG(a.betrag)}</span></div></div>`).join('')}</div>
+  ${cd('Neue Ausgabe',`
+    <div class="grid grid-2"><div><label>Kategorie</label><select id="a-kat"><option>Strom</option><option>Diesel</option><option>Gehälter</option><option>Reparatur</option><option>Transport</option><option>Ersatzteile</option><option>Sonstiges</option></select></div><div><label>Betrag (${D.einstellungen?.waehrung||'TJS'})</label><input type="number" id="a-bet" /></div><div style="grid-column:span 2"><label>Beschreibung</label><input type="text" id="a-beschr" /></div></div>
+    <button class="btn btn-orange btn-sm" style="margin-top:12px" onclick="addAusg()">Ausgabe speichern</button>
+  `)}`;
+}
+async function addAusg(){
+  const b=parseInt(document.getElementById('a-bet').value)||0;if(b<=0)return;
+  await sb.from('ausgaben').insert({datum:today(),kategorie:document.getElementById('a-kat').value,beschreibung:document.getElementById('a-beschr').value.trim()||document.getElementById('a-kat').value,betrag:b});
+  await loadAll();render();
+}
+
+// Enter key login
+document.getElementById('login-pass').addEventListener('keyup', e => { if(e.key==='Enter') doLogin(); });
+</script>
+</body>
+</html>
